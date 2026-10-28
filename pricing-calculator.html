@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Pricing Calculator</title>
+<style>
+  :root {
+    --bg: #f1f4ee;
+    --surface: #ffffff;
+    --ink: #14231a;
+    --muted: #55655b;
+    --line: #cfd8cc;
+    --accent: #1f6b47;
+    --accent-ink: #ffffff;
+    --soft: #e3f3ea;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1a14;
+      --surface: #16241c;
+      --ink: #e8efe9;
+      --muted: #9fb0a5;
+      --line: #2b3d32;
+      --accent: #5fc58e;
+      --accent-ink: #0f1a14;
+      --soft: #17382a;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", Roboto, system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  h1 { font-size: 1.6rem; margin: 8px 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.1rem; margin: 0 0 4px; }
+  p.lead { margin: 0 0 20px; color: var(--muted); }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  label { display: block; font-weight: 600; margin: 14px 0 6px; }
+  .hint { font-weight: 400; color: var(--muted); font-size: 0.9rem; display: block; }
+  input[type="number"] {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 11px 12px;
+  }
+  input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 420px) { .row { grid-template-columns: 1fr; } }
+  .check { display: flex; gap: 10px; align-items: center; font-weight: 600; margin-top: 16px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--accent); }
+  .rate {
+    background: var(--soft);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+  .rate strong { font-size: 1.3rem; }
+  .tiers { display: grid; gap: 10px; }
+  .tier {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .tier.main { border: 2px solid var(--accent); }
+  .tier .name { font-weight: 700; }
+  .tier .what { color: var(--muted); font-size: 0.9rem; }
+  .tier .price { font-size: 1.4rem; font-weight: 700; margin-top: 4px; }
+  .tier .alt { color: var(--muted); font-size: 0.9rem; }
+  .small { color: var(--muted); font-size: 0.88rem; margin: 10px 0 0; }
+  .examples { background: var(--soft); border-radius: 8px; padding: 10px 12px; font-size: 0.92rem; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Project Pricing Calculator</h1>
+  <p class="lead">Work out what to charge before a client asks. All amounts are in GH₵.</p>
+
+  <div class="examples">The numbers below are examples. Replace them with your own.</div>
+
+  <section class="panel" aria-labelledby="yourRate">
+    <h2 id="yourRate">1. Your hourly rate</h2>
+    <label for="goal">Monthly income you want from this work (GH₵)</label>
+    <input id="goal" type="number" inputmode="decimal" min="0" value="3000">
+
+    <label for="costs">Monthly business costs (GH₵) <span class="hint">Data, tools, subscriptions, API plan</span></label>
+    <input id="costs" type="number" inputmode="decimal" min="0" value="300">
+
+    <div class="row">
+      <div>
+        <label for="hours">Billable hours per month <span class="hint">Real client work, not total free time</span></label>
+        <input id="hours" type="number" inputmode="decimal" min="1" value="40">
+      </div>
+      <div>
+        <label for="tax">Set aside for tax / savings (%)</label>
+        <input id="tax" type="number" inputmode="decimal" min="0" max="60" value="10">
+      </div>
+    </div>
+
+    <div class="rate" id="rateBox" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="projectH">
+    <h2 id="projectH">2. This project</h2>
+    <div class="row">
+      <div>
+        <label for="phours">Hours you expect it to take</label>
+        <input id="phours" type="number" inputmode="decimal" min="1" value="20">
+      </div>
+      <div>
+        <label for="buffer">Buffer for surprises (%) <span class="hint">Revisions, delays, extra requests</span></label>
+        <input id="buffer" type="number" inputmode="decimal" min="0" value="25">
+      </div>
+    </div>
+
+    <label for="pcosts">Project-only costs (GH₵) <span class="hint">Domain, hosting, paid data for this job</span></label>
+    <input id="pcosts" type="number" inputmode="decimal" min="0" value="0">
+
+    <label class="check"><input id="rush" type="checkbox"> Rush job (+25%)</label>
+
+    <label for="fx">Exchange rate: GH₵ per 1 USD <span class="hint">Optional. Enter today's rate to also see prices in USD</span></label>
+    <input id="fx" type="number" inputmode="decimal" min="0" placeholder="e.g. enter today's rate">
+  </section>
+
+  <section class="panel" aria-labelledby="begH">
+    <h2 id="begH">3. Beginner adjustments</h2>
+    <label for="disc">Beginner discount (%) <span class="hint">Temporary: use it for your first few clients while you build your portfolio</span></label>
+    <input id="disc" type="number" inputmode="decimal" min="0" max="80" value="30">
+
+    <label for="minrate">Lowest hourly rate you'd accept (GH₵) <span class="hint">Below this, the job costs you more than it pays</span></label>
+    <input id="minrate" type="number" inputmode="decimal" min="0" value="30">
+
+    <label for="market">What clients near you usually pay for a job like this (GH₵) <span class="hint">Optional. Ask around or check local freelancers. This is your real market check</span></label>
+    <input id="market" type="number" inputmode="decimal" min="0" placeholder="Optional">
+  </section>
+
+  <section class="panel" aria-labelledby="priceH">
+    <h2 id="priceH">4. What to charge</h2>
+    <div class="tiers" id="tiers" aria-live="polite"></div>
+    <p class="small">Standard = your hours with buffer at your hourly rate, plus project costs. Beginner price = Standard minus your discount. Walk-away floor = your project hours at your lowest accepted rate, plus project costs. Use the beginner price for your first few clients, then move to Standard once you have a portfolio and case study.</p>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const num = (id) => Math.max(0, parseFloat($(id).value) || 0);
+  const ghs = (x) => "GH₵ " + Math.round(x).toLocaleString("en-US");
+
+  function calc() {
+    const goal = num("goal"), costs = num("costs");
+    const hours = Math.max(1, num("hours"));
+    const tax = Math.min(60, num("tax"));
+    const grossNeed = (goal + costs) / (1 - tax / 100);
+    const rate = grossNeed / hours;
+
+    $("rateBox").innerHTML = `Your hourly rate: <strong>${ghs(rate)}</strong><br>
+      <span class="hint">You need to bill about ${ghs(grossNeed)} a month to hit your goal.</span>`;
+
+    const ph = num("phours"), buf = num("buffer"), pc = num("pcosts");
+    let standard = ph * (1 + buf / 100) * rate + pc;
+    if ($("rush").checked) standard *= 1.25;
+    const disc = Math.min(80, num("disc"));
+    const beginner = standard * (1 - disc / 100);
+    const floor = ph * num("minrate") + pc;
+    const market = num("market");
+    const fx = num("fx");
+
+    // Never let the beginner price drop below the walk-away floor
+    const beginnerShown = Math.max(beginner, floor);
+    const hitFloor = beginner < floor;
+
+    let check = "";
+    if (market) {
+      if (beginnerShown > market * 1.1) {
+        check = `<div class="tier"><div class="name">Market check</div><div class="what">Your beginner price is above what clients near you usually pay (${ghs(market)}). Try cutting scope (fewer pages or features) instead of cutting your rate.</div></div>`;
+      } else {
+        check = `<div class="tier"><div class="name">Market check</div><div class="what">Your beginner price is in line with what clients near you usually pay (${ghs(market)}).</div></div>`;
+      }
+    }
+    if (hitFloor) {
+      check += `<div class="tier"><div class="name">Heads up</div><div class="what">The discount would push you below your walk-away floor, so the beginner price is held at the floor.</div></div>`;
+    }
+
+    const tier = (name, what, price, main) => `
+      <div class="tier ${main ? "main" : ""}">
+        <div class="name">${name}</div>
+        <div class="what">${what}</div>
+        <div class="price">${ghs(price)}</div>
+        ${fx ? `<div class="alt">About $${Math.round(price / fx).toLocaleString("en-US")} USD</div>` : ""}
+      </div>`;
+
+    $("tiers").innerHTML =
+      tier("Beginner price", `Quote this to your first few clients (${disc}% off Standard)`, beginnerShown, true) +
+      tier("Standard", "Your full rate once you have proof of work", standard, false) +
+      tier("Walk-away floor", "Never go under this", floor, false) +
+      check;
+  }
+
+  document.querySelectorAll("input").forEach((el) => el.addEventListener("input", calc));
+  calc();
+</script>
+</body>
+</html>
