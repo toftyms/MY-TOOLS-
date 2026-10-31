@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Tracker · Local CRM</title>
+<style>
+  :root {
+    --bg: #f1f4ee;
+    --surface: #ffffff;
+    --ink: #14231a;
+    --muted: #55655b;
+    --line: #cfd8cc;
+    --accent: #1f6b47;
+    --accent-ink: #ffffff;
+    --soft: #e3f3ea;
+    --warn: #8a5a00;
+    --warn-bg: #fff3d6;
+    --bad: #9b2226;
+    --bad-bg: #fde8e8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1a14;
+      --surface: #16241c;
+      --ink: #e8efe9;
+      --muted: #9fb0a5;
+      --line: #2b3d32;
+      --accent: #5fc58e;
+      --accent-ink: #0f1a14;
+      --soft: #17382a;
+      --warn: #f0c36a;
+      --warn-bg: #3a2e12;
+      --bad: #f2a1a4;
+      --bad-bg: #3a1a1b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1a14; --surface: #16241c; --ink: #e8efe9; --muted: #9fb0a5;
+    --line: #2b3d32; --accent: #5fc58e; --accent-ink: #0f1a14; --soft: #17382a;
+    --warn: #f0c36a; --warn-bg: #3a2e12; --bad: #f2a1a4; --bad-bg: #3a1a1b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", Roboto, system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 18px 64px; }
+  h1 { font-size: clamp(1.55rem, 4vw, 2rem); margin: 0 0 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  p.lead { margin: 0 0 22px; color: var(--muted); max-width: 52ch; }
+  .app-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
+  .app-header .ghost { flex: 0 0 auto; padding: 8px 11px; font-size: .9rem; }
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .summary-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-width: 0; }
+  .summary-card .label { display: block; color: var(--muted); font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .summary-card strong { display: block; margin-top: 3px; font-size: 1.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+  .toolbar > * { flex: 1 1 auto; }
+  .toolbar .ghost { width: auto; }
+  .file-input { display: none; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  label { display: block; font-weight: 600; margin: 12px 0 6px; }
+  label:first-of-type { margin-top: 0; }
+  .hint { font-weight: 400; color: var(--muted); font-size: 0.9rem; }
+  input, select, textarea {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  textarea { min-height: 72px; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 420px) { .row { grid-template-columns: 1fr; } }
+
+  button, .btn {
+    font: inherit;
+    font-weight: 700;
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+  }
+  .primary { background: var(--accent); color: var(--accent-ink); width: 100%; }
+  .ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .danger { background: transparent; color: var(--bad); border: 1px solid var(--line); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  button, .btn { transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease; }
+  button:hover, .btn:hover { transform: translateY(-1px); }
+  button:active, .btn:active { transform: translateY(0); }
+  .actions > * { flex: 1 1 auto; padding: 9px 12px; font-size: 0.95rem; }
+
+  .stats { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 18px; padding: 2px 2px 5px; scrollbar-width: thin; }
+  .stat {
+    flex: 0 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .stat b { font-size: 1.1rem; }
+  .stat.on { border-color: var(--accent); background: var(--soft); }
+
+  .filters { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 680px) { .summary { grid-template-columns: repeat(2, 1fr); } .filters { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .app-header { align-items: center; } .summary { gap: 8px; } .filters { grid-template-columns: 1fr; } .actions > * { flex: 1 1 100%; } .top { gap: 12px; } .badge { white-space: normal; text-align: right; } }
+
+  .lead-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(20,35,26,.04); }
+  .lead-card.overdue { border-left: 5px solid var(--bad); }
+  .lead-card.today { border-left: 5px solid var(--warn); }
+  .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .name { font-weight: 700; font-size: 1.05rem; margin: 0; }
+  .biz { color: var(--muted); margin: 0; font-size: 0.95rem; }
+  .badge { background: var(--soft); color: var(--accent); font-weight: 700; font-size: 0.8rem; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .meta { margin: 8px 0 0; font-size: 0.92rem; color: var(--muted); }
+  .due { font-weight: 700; }
+  .due.overdue { color: var(--bad); }
+  .due.today { color: var(--warn); }
+  .notes { margin: 8px 0 0; font-size: 0.95rem; white-space: pre-wrap; }
+  .empty { text-align: center; color: var(--muted); padding: 34px 16px; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; }
+  .hidden { display: none; }
+  .small { color: var(--muted); font-size: 0.88rem; margin: 14px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="app-header">
+    <div>
+      <h1>Lead Tracker</h1>
+      <p class="lead">Log everyone you talk to, and never miss a follow-up.</p>
+    </div>
+    <button class="ghost" id="themeToggle" type="button" aria-pressed="false">Dark mode</button>
+  </div>
+
+  <div class="summary" id="summary" aria-label="Pipeline summary"></div>
+  <div class="stats" id="stats" role="group" aria-label="Filter by stage"></div>
+
+  <button class="primary" id="toggleForm" type="button" style="margin-bottom:14px" aria-controls="formPanel" aria-expanded="false">+ Add a lead</button>
+
+  <section class="panel hidden" id="formPanel" aria-labelledby="formH">
+    <h2 id="formH">New lead</h2>
+    <label for="name">Name</label>
+    <input id="name" type="text" autocomplete="name" placeholder="Person or business name" required aria-required="true">
+
+    <label for="biz">What they do <span class="hint">e.g. salon, shop, school</span></label>
+    <input id="biz" type="text" autocomplete="organization">
+
+    <div class="row">
+      <div>
+        <label for="phone">Phone / WhatsApp</label>
+        <input id="phone" type="tel" inputmode="tel" autocomplete="off" placeholder="024 123 4567">
+      </div>
+      <div>
+        <label for="source">Where you found them</label>
+        <select id="source">
+          <option>WhatsApp</option>
+          <option>Instagram</option>
+          <option>Facebook</option>
+          <option>TikTok</option>
+          <option>Referral</option>
+          <option>In person</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="stage">Stage</label>
+        <select id="stage"></select>
+      </div>
+      <div>
+        <label for="value">Possible value (GH₵)</label>
+        <input id="value" type="number" inputmode="decimal" min="0">
+      </div>
+    </div>
+
+    <label for="follow">Follow up on</label>
+    <input id="follow" type="date">
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" placeholder="What they need, what you promised, what they said" maxlength="1000"></textarea>
+
+    <div class="actions">
+      <button class="primary" id="save" type="button">Save lead</button>
+      <button class="ghost" id="cancel" type="button">Cancel</button>
+    </div>
+    <p class="small" id="formErr" role="alert"></p>
+  </section>
+
+  <div class="filters">
+    <div>
+      <label for="search" class="hint" style="margin:0 0 4px">Search</label>
+      <input id="search" type="search" placeholder="Name, business, notes">
+    </div>
+    <div>
+      <label for="stageFilter" class="hint" style="margin:0 0 4px">Show</label>
+      <select id="stageFilter"></select>
+    </div>
+    <div>
+      <label for="sortBy" class="hint" style="margin:0 0 4px">Sort by</label>
+      <select id="sortBy">
+        <option value="priority">Follow-up priority</option>
+        <option value="newest">Newest added</option>
+        <option value="value">Highest value</option>
+        <option value="name">Name A–Z</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="list" aria-live="polite"></div>
+
+  <div class="toolbar" aria-label="Data tools">
+    <button class="ghost" id="export" type="button">Export CSV</button>
+    <button class="ghost" id="importButton" type="button">Import CSV</button>
+    <input class="file-input" id="importFile" type="file" accept=".csv,text/csv">
+  </div>
+  <p class="small" id="exportStatus" role="status"></p>
+  <p class="small">Leads are saved in this browser on this device only. Nothing is uploaded. Use Export now and then as a backup, and use the same browser each time.</p>
+</main>
+
+<script>
+  const STAGES = ["New", "Contacted", "Replied", "Proposal sent", "Won", "Lost"];
+  const KEY = "leadTracker.v1";
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // Storage with a safe fallback if the browser blocks it
+  let memory = [];
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY));
+      return Array.isArray(saved) ? saved : [];
+    } catch (e) { return memory; }
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(leads)); } catch (e) { memory = leads; }
+  }
+
+  let leads = load();
+  let editingId = null;
+  let activeStage = "All";
+  let sortBy = "priority";
+  const THEME_KEY = "leadTracker.theme";
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const dark = theme === "dark";
+    $("themeToggle").textContent = dark ? "Light mode" : "Dark mode";
+    $("themeToggle").setAttribute("aria-pressed", String(dark));
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+
+  function initTheme() {
+    let saved = "";
+    try { saved = localStorage.getItem(THEME_KEY) || ""; } catch (e) {}
+    applyTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  }
+
+  function todayStr() {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  function waLink(phone) {
+    let n = String(phone || "").replace(/\D/g, "");
+    if (!n) return "";
+    if (n.startsWith("0")) n = "233" + n.slice(1);
+    return `https://wa.me/${n}`;
+  }
+
+  function dueState(l) {
+    if (!l.follow || l.stage === "Won" || l.stage === "Lost") return "";
+    const t = todayStr();
+    return l.follow < t ? "overdue" : l.follow === t ? "today" : "";
+  }
+
+  function fmtDate(s) {
+    if (!s) return "";
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  }
+
+  function sortLeads(arr) {
+    const rank = (l) => (l.stage === "Won" || l.stage === "Lost" ? 3 : l.follow ? 1 : 2);
+    return arr.slice().sort((a, b) => {
+      if (sortBy === "newest") return (b.created || 0) - (a.created || 0);
+      if (sortBy === "value") return (Number(b.value) || 0) - (Number(a.value) || 0);
+      if (sortBy === "name") return String(a.name).localeCompare(String(b.name));
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      if (ra === 1) return String(a.follow).localeCompare(String(b.follow));
+      return (b.created || 0) - (a.created || 0);
+    });
+  }
+
+  function renderStats() {
+    const counts = Object.fromEntries(STAGES.map((s) => [s, 0]));
+    leads.forEach((l) => counts[l.stage]++);
+    const due = leads.filter((l) => dueState(l)).length;
+    const pipeline = leads.filter((l) => !["Won", "Lost"].includes(l.stage)).reduce((sum, l) => sum + (Number(l.value) || 0), 0);
+    const won = leads.filter((l) => l.stage === "Won").reduce((sum, l) => sum + (Number(l.value) || 0), 0);
+    $("summary").innerHTML = `
+      <div class="summary-card"><span class="label">Total leads</span><strong>${leads.length}</strong></div>
+      <div class="summary-card"><span class="label">Needs follow-up</span><strong>${due}</strong></div>
+      <div class="summary-card"><span class="label">Open pipeline</span><strong>GH₵ ${pipeline.toLocaleString("en-US")}</strong></div>
+      <div class="summary-card"><span class="label">Won value</span><strong>GH₵ ${won.toLocaleString("en-US")}</strong></div>`;
+    const chip = (label, n, key) =>
+      `<button class="stat ${activeStage === key ? "on" : ""}" data-stage="${esc(key)}" type="button" style="margin:0">${esc(label)} <b>${n}</b></button>`;
+    $("stats").innerHTML =
+      chip("All", leads.length, "All") +
+      (due ? chip("Follow up", due, "__due") : "") +
+      STAGES.map((s) => chip(s, counts[s], s)).join("");
+    $("stats").querySelectorAll("button").forEach((b) =>
+      b.addEventListener("click", () => {
+        activeStage = b.dataset.stage;
+        $("stageFilter").value = STAGES.includes(activeStage) || activeStage === "All" ? activeStage : "All";
+        render();
+      })
+    );
+  }
+
+  function render() {
+    renderStats();
+    const q = $("search").value.trim().toLowerCase();
+    let view = leads.filter((l) => {
+      if (activeStage === "__due") { if (!dueState(l)) return false; }
+      else if (activeStage !== "All" && l.stage !== activeStage) return false;
+      if (q && !`${l.name} ${l.biz} ${l.notes} ${l.phone}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    view = sortLeads(view);
+
+    if (!view.length) {
+      $("list").innerHTML = `<div class="empty">${leads.length ? "No leads match this view." : "No leads yet. Tap \"Add a lead\" to log your first one."}</div>`;
+      return;
+    }
+
+    $("list").innerHTML = view.map((l) => {
+      const st = dueState(l);
+      const wa = waLink(l.phone);
+      const dueTxt = l.follow
+        ? `<span class="due ${st}">${st === "overdue" ? "Overdue: " : st === "today" ? "Today: " : "Follow up: "}${esc(fmtDate(l.follow))}</span>`
+        : "";
+      const bits = [dueTxt, l.source ? esc(l.source) : "", l.value ? `GH₵ ${Number(l.value).toLocaleString("en-US")}` : "", l.phone ? esc(l.phone) : ""].filter(Boolean).join(" · ");
+      return `
+        <article class="lead-card ${st}" data-id="${l.id}">
+          <div class="top">
+            <div>
+              <p class="name">${esc(l.name)}</p>
+              ${l.biz ? `<p class="biz">${esc(l.biz)}</p>` : ""}
+            </div>
+            <span class="badge">${esc(l.stage)}</span>
+          </div>
+          ${bits ? `<p class="meta">${bits}</p>` : ""}
+          ${l.notes ? `<p class="notes">${esc(l.notes)}</p>` : ""}
+          <div class="actions">
+            <select aria-label="Change stage for ${esc(l.name)}" data-act="stage">
+              ${STAGES.map((s) => `<option ${s === l.stage ? "selected" : ""}>${s}</option>`).join("")}
+            </select>
+            ${wa ? `<a class="btn ghost" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+            <button class="ghost" data-act="edit" type="button">Edit</button>
+            <button class="danger" data-act="del" type="button">Delete</button>
+          </div>
+        </article>`;
+    }).join("");
+  }
+
+  function openForm(lead) {
+    editingId = lead ? lead.id : null;
+    $("formH").textContent = lead ? "Edit lead" : "New lead";
+    $("name").value = lead?.name || "";
+    $("biz").value = lead?.biz || "";
+    $("phone").value = lead?.phone || "";
+    $("source").value = lead?.source || "WhatsApp";
+    $("stage").value = lead?.stage || "New";
+    $("value").value = lead?.value || "";
+    $("follow").value = lead?.follow || "";
+    $("notes").value = lead?.notes || "";
+    $("formErr").textContent = "";
+    $("formPanel").classList.remove("hidden");
+    $("toggleForm").classList.add("hidden");
+    $("toggleForm").setAttribute("aria-expanded", "true");
+    $("formPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("name").focus();
+  }
+
+  function closeForm() {
+    $("formPanel").classList.add("hidden");
+    $("toggleForm").classList.remove("hidden");
+    $("toggleForm").setAttribute("aria-expanded", "false");
+    editingId = null;
+  }
+
+  function saveLead() {
+    const name = $("name").value.trim();
+    if (!name) { $("formErr").textContent = "Add a name first."; $("name").focus(); return; }
+    const amount = $("value").value;
+    if (amount !== "" && Number(amount) < 0) { $("formErr").textContent = "Possible value cannot be negative."; $("value").focus(); return; }
+    const data = {
+      name,
+      biz: $("biz").value.trim(),
+      phone: $("phone").value.trim(),
+      source: $("source").value,
+      stage: $("stage").value,
+      value: amount,
+      follow: $("follow").value,
+      notes: $("notes").value.trim(),
+    };
+    if (editingId) {
+      leads = leads.map((l) => (l.id === editingId ? { ...l, ...data } : l));
+    } else {
+      leads.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), created: Date.now(), ...data });
+    }
+    persist();
+    closeForm();
+    render();
+  }
+
+  function exportCsv() {
+    if (!leads.length) {
+      $("exportStatus").textContent = "Add at least one lead before exporting.";
+      return;
+    }
+    const cols = ["name", "biz", "phone", "source", "stage", "value", "follow", "notes"];
+    const head = ["Name", "What they do", "Phone", "Source", "Stage", "Possible value (GHS)", "Follow up", "Notes"];
+    const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [head.map(cell).join(",")].concat(leads.map((l) => cols.map((c) => cell(l[c])).join(","))).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    $("exportStatus").textContent = `Exported ${leads.length} lead${leads.length === 1 ? "" : "s"}.`;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "leads.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+
+  function parseCsv(text) {
+    const rows = [];
+    let row = [], cell = "", quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i], next = text[i + 1];
+      if (c === '"' && quoted && next === '"') { cell += '"'; i++; }
+      else if (c === '"') quoted = !quoted;
+      else if (c === ',' && !quoted) { row.push(cell); cell = ""; }
+      else if ((c === "\n" || c === "\r") && !quoted) { if (c === "\r" && next === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(v => v.trim() !== ""));
+  }
+
+  function importCsv(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseCsv(String(reader.result || ""));
+      if (rows.length < 2) { $("exportStatus").textContent = "That CSV does not contain any lead rows."; return; }
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      const get = (r, names) => { const i = names.map(n => header.indexOf(n)).find(i => i >= 0); return i >= 0 ? (r[i] || "").trim() : ""; };
+      const imported = rows.slice(1).map((r, i) => ({
+        id: Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), created: Date.now() + i,
+        name: get(r, ["name"]), biz: get(r, ["what they do", "business", "biz"]), phone: get(r, ["phone", "phone / whatsapp"]),
+        source: get(r, ["source"]) || "Other", stage: STAGES.includes(get(r, ["stage"])) ? get(r, ["stage"]) : "New",
+        value: get(r, ["possible value (ghs)", "possible value (gh₵)", "value"]), follow: get(r, ["follow up", "follow up on"]), notes: get(r, ["notes"])
+      })).filter(l => l.name);
+      if (!imported.length) { $("exportStatus").textContent = "No valid lead names were found in that CSV."; return; }
+      if (!confirm(`Replace the current leads with ${imported.length} imported lead${imported.length === 1 ? "" : "s"}?`)) return;
+      leads = imported; persist(); activeStage = "All"; $("stageFilter").value = "All"; render();
+      $("exportStatus").textContent = `Imported ${leads.length} lead${leads.length === 1 ? "" : "s"}.`;
+    };
+    reader.readAsText(file);
+  }
+
+  // Setup
+  $("stage").innerHTML = STAGES.map((s) => `<option>${s}</option>`).join("");
+  $("stageFilter").innerHTML = `<option>All</option>` + STAGES.map((s) => `<option>${s}</option>`).join("");
+
+  $("toggleForm").addEventListener("click", () => openForm(null));
+  $("cancel").addEventListener("click", closeForm);
+  $("save").addEventListener("click", saveLead);
+  $("export").addEventListener("click", exportCsv);
+  $("importButton").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importCsv(e.target.files[0]); e.target.value = ""; });
+  $("themeToggle").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+  $("sortBy").addEventListener("change", () => { sortBy = $("sortBy").value; render(); });
+  $("search").addEventListener("input", render);
+  $("stageFilter").addEventListener("change", () => { activeStage = $("stageFilter").value; render(); });
+
+  $("list").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = btn.closest(".lead").dataset.id;
+    const lead = leads.find((l) => l.id === id);
+    if (btn.dataset.act === "edit") openForm(lead);
+    if (btn.dataset.act === "del" && confirm(`Delete ${lead.name}?`)) {
+      leads = leads.filter((l) => l.id !== id);
+      persist();
+      render();
+    }
+  });
+  $("list").addEventListener("change", (e) => {
+    if (e.target.dataset.act !== "stage") return;
+    const id = e.target.closest(".lead").dataset.id;
+    leads = leads.map((l) => (l.id === id ? { ...l, stage: e.target.value } : l));
+    persist();
+    render();
+  });
+
+  initTheme();
+  render();
+</script>
+</body>
+</html>
